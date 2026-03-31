@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer | Login</title>
+  <link rel="stylesheet" href="/assets/main.css?v=20260324c" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="logo" href="/customer-ui/">ElecStore</a>
+      <nav class="nav">
+        <span class="pill" id="customer-token-pill">Not logged in</span>
+        <a class="btn ghost" href="/customer-ui/register/">Register</a>
+        <a class="btn ghost" href="/customer-ui/cart/">Cart</a>
+        <button class="btn danger" id="customer-logout-btn" type="button" style="display:none;">Logout</button>
+      </nav>
+    </header>
+
+    <section class="card panel" style="margin-top:1rem; max-width:720px;">
+      <h1>Login</h1>
+      <form id="customer-login-form">
+        <div class="row one">
+          <input id="customer-login-email" placeholder="Email or Username" required />
+        </div>
+        <div class="row one">
+          <input id="customer-login-password" type="password" placeholder="Password" required />
+        </div>
+        <div class="actions">
+          <button class="btn primary" type="submit">Sign In</button>
+          <a class="btn ghost" href="/customer-ui/register/">Create Account</a>
+        </div>
+      </form>
+      <p id="customer-login-output" style="display:none;"></p>
+    </section>
+  </main>
+
+  <script src="/assets/app.js?v=20260324c"></script>
+  <script>
+    UI.renderCustomerTokenPill('customer-token-pill');
+    UI.bindCustomerAuth();
+  </script>
+</body>
+</html>

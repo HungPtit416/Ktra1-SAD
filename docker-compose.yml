@@ -1,0 +1,146 @@
+services:
+  gateway:
+    image: nginx:1.27-alpine
+    container_name: gateway
+    ports:
+      - "8100:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./gateway/frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - customer-service
+      - staff-service
+      - laptop-service
+      - mobile-service
+
+  customer-service:
+    build: ./customer_service
+    container_name: customer-service
+    env_file:
+      - ./customer_service/.env
+    volumes:
+      - ./customer_service:/app
+    depends_on:
+      customer-db:
+        condition: service_healthy
+    ports:
+      - "8101:8000"
+
+  customer-db:
+    image: mysql:8.0
+    container_name: customer-db
+    environment:
+      MYSQL_DATABASE: customer_db
+      MYSQL_USER: customer_user
+      MYSQL_PASSWORD: customer_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - customer_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  staff-service:
+    build: ./staff_service
+    container_name: staff-service
+    env_file:
+      - ./staff_service/.env
+    volumes:
+      - ./staff_service:/app
+    depends_on:
+      staff-db:
+        condition: service_healthy
+    ports:
+      - "8102:8000"
+
+  staff-db:
+    image: mysql:8.0
+    container_name: staff-db
+    environment:
+      MYSQL_DATABASE: staff_db
+      MYSQL_USER: staff_user
+      MYSQL_PASSWORD: staff_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3308:3306"
+    volumes:
+      - staff_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  laptop-service:
+    build: ./laptop_service
+    container_name: laptop-service
+    env_file:
+      - ./laptop_service/.env
+    volumes:
+      - ./laptop_service:/app
+    depends_on:
+      laptop-db:
+        condition: service_healthy
+    ports:
+      - "8103:8000"
+
+  laptop-db:
+    image: postgres:16-alpine
+    container_name: laptop-db
+    environment:
+      POSTGRES_DB: laptop_db
+      POSTGRES_USER: laptop_user
+      POSTGRES_PASSWORD: laptop_pass
+    ports:
+      - "5433:5432"
+    volumes:
+      - laptop_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  mobile-service:
+    build: ./mobile_service
+    container_name: mobile-service
+    env_file:
+      - ./mobile_service/.env
+    volumes:
+      - ./mobile_service:/app
+    depends_on:
+      mobile-db:
+        condition: service_healthy
+    ports:
+      - "8104:8000"
+
+  mobile-db:
+    image: postgres:16-alpine
+    container_name: mobile-db
+    environment:
+      POSTGRES_DB: mobile_db
+      POSTGRES_USER: mobile_user
+      POSTGRES_PASSWORD: mobile_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - mobile_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  customer_db_data:
+  staff_db_data:
+  laptop_db_data:
+  mobile_db_data:

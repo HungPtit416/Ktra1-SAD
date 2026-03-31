@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Staff | Login</title>
+  <link rel="stylesheet" href="/assets/main.css?v=20260324c" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="logo" href="/">ElecStore</a>
+      <nav class="nav">
+        <span class="pill" id="staff-token-pill">Not logged in</span>
+        <a class="btn ghost" href="/staff-ui/">Dashboard</a>
+        <button class="btn danger" id="staff-logout-btn" type="button" style="display:none;">Logout</button>
+      </nav>
+    </header>
+
+    <section class="card panel" style="margin-top:1rem; max-width:720px;">
+      <h1>Staff Login</h1>
+      <form id="staff-login-form">
+        <div class="row one">
+          <input id="staff-login-email" placeholder="Email or Username" required />
+        </div>
+        <div class="row one">
+          <input id="staff-login-password" type="password" placeholder="Password" required />
+        </div>
+        <div class="actions">
+          <button class="btn secondary" type="submit">Sign In</button>
+        </div>
+      </form>
+      <p id="staff-login-output" style="display:none;"></p>
+    </section>
+  </main>
+
+  <script src="/assets/app.js?v=20260324c"></script>
+  <script>
+    UI.renderStaffTokenPill('staff-token-pill');
+    UI.bindStaffAuth();
+  </script>
+</body>
+</html>

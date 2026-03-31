@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer | Shopping Cart</title>
+  <link rel="stylesheet" href="/assets/main.css?v=20260324c" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="logo" href="/customer-ui/">ElecStore</a>
+      <nav class="nav">
+        <span class="pill" id="customer-token-pill">Not logged in</span>
+        <a class="btn ghost" href="/customer-ui/">Continue Shopping</a>
+        <a class="btn ghost" href="/customer-ui/login/">Login</a>
+        <button class="btn danger" id="customer-logout-btn" type="button" style="display:none;">Logout</button>
+      </nav>
+    </header>
+
+    <section class="card panel cart-panel">
+      <h1>Shopping Cart</h1>
+      <div id="customer-cart-table" aria-live="polite"></div>
+      <p id="customer-cart-total" style="display:none;"></p>
+      <div class="cart-actions">
+        <button class="btn primary" id="customer-create-cart-btn" type="button">Create New Cart</button>
+        <button class="btn ghost" id="customer-refresh-cart-btn" type="button">Refresh</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="/assets/app.js?v=20260324c"></script>
+  <script>
+    if (!localStorage.getItem('gw_customer_token')) {
+      document.body.innerHTML = '<main class="page"><section class="card panel" style="margin-top:2rem;text-align:center;"><p>Please log in to view your shopping cart.</p><a class="btn primary" href="/customer-ui/login/">Sign In</a></section></main>';
+    } else {
+      UI.mountCustomerCart();
+    }
+  </script>
+</body>
+</html>

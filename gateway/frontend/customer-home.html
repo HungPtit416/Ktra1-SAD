@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer | Shopping</title>
+  <link rel="stylesheet" href="/assets/main.css?v=20260324c" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="logo" href="/">ElecStore</a>
+      <form class="search" method="get" action="/customer-ui/">
+        <input id="customer-search-input" name="q" placeholder="Search products..." />
+        <button class="btn primary" type="submit">Search</button>
+      </form>
+      <nav class="nav">
+        <span class="pill" id="customer-token-pill">Not logged in</span>
+        <a class="btn ghost" href="/customer-ui/login/">Login</a>
+        <a class="btn ghost" href="/customer-ui/register/">Register</a>
+        <a class="btn ghost" href="/customer-ui/cart/">Cart</a>
+        <button class="btn danger" id="customer-logout-btn" type="button" style="display:none;">Logout</button>
+      </nav>
+    </header>
+
+    <!-- <section class="hero">
+      <h1>Customer Home</h1>
+      <p>Danh sach san pham laptop + mobile theo card layout, co phan trang va route chi tiet.</p>
+    </section> -->
+
+    <section id="customer-grid" class="grid products" aria-live="polite"></section>
+    <nav id="customer-pager" class="pagination"></nav>
+  </main>
+
+  <script src="/assets/app.js?v=20260324c"></script>
+  <script>
+    UI.mountCustomerHome();
+  </script>
+</body>
+</html>

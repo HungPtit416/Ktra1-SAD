@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer | Product Details</title>
+  <link rel="stylesheet" href="/assets/main.css?v=20260324c" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="logo" href="/customer-ui/">ElecStore</a>
+      <nav class="nav">
+        <span class="pill" id="customer-token-pill">Not logged in</span>
+        <a class="btn ghost" href="/customer-ui/login/">Login</a>
+        <a class="btn ghost" href="/customer-ui/cart/">Cart</a>
+        <button class="btn danger" id="customer-logout-btn" type="button" style="display:none;">Logout</button>
+      </nav>
+    </header>
+
+    <!-- <section class="hero">
+      <h1>Chi tiet san pham</h1>
+      <p>Trang chi tiet da duoc toi uu theo flow mua hang thuc te: xem thong tin, chon cart, chon so luong, them vao gio ngay.</p>
+    </section> -->
+
+    <section id="customer-detail-holder" aria-live="polite"></section>
+  </main>
+
+  <script src="/assets/app.js?v=20260324c"></script>
+  <script>
+    UI.bindCustomerAuth();
+    UI.mountCustomerDetail();
+  </script>
+</body>
+</html>
