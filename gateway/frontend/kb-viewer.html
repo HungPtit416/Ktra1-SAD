@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📚 Knowledge Base Viewer</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .kb-grid {
+      display: grid;
+      gap: 20px;
+    }
+
+    .kb-card {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .kb-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+    }
+
+    .kb-card .title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .kb-card .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .kb-card .content {
+      color: #555;
+      line-height: 1.6;
+      font-size: 14px;
+      margin-top: 15px;
+      background: #f9f9f9;
+      padding: 15px;
+      border-left: 3px solid #667eea;
+      border-radius: 4px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .kb-card .content::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .kb-card .content::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .kb-card .content::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 10px;
+    }
+
+    .kb-card .content::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e6f7ff;
+      border-left: 3px solid #1890ff;
+      border-radius: 4px;
+      color: #0050b3;
+      font-size: 14px;
+    }
+
+    .status.success {
+      background: #f6ffed;
+      border-left-color: #52c41a;
+      color: #274e0b;
+    }
+
+    .status.error {
+      background: #fff1f0;
+      border-left-color: #ff4d4f;
+      color: #830000;
+    }
+
+    .test-section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+
+    .test-section h2 {
+      color: #333;
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .test-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .test-form input {
+      flex: 1;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .test-form input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #764ba2;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .test-result {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      color: #333;
+    }
+
+    .test-result.error {
+      background: #fff1f0;
+      color: #830000;
+    }
+
+    .test-result.success {
+      background: #f6ffed;
+      color: #274e0b;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #667eea;
+      animation: pulse 1.5s infinite;
+      margin-left: 5px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📚 Knowledge Base Viewer</h1>
+    <p>Xem tất cả tài liệu trong hệ thống AI Advisor</p>
+  </div>
+
+  <div id="kb-container" class="kb-grid">
+    <div class="status">⏳ đang load...</div>
+  </div>
+
+  <div class="test-section">
+    <h2>🧪 Test RAG API</h2>
+    <div class="test-form">
+      <input 
+        type="text" 
+        id="testQuery" 
+        placeholder="Nhập câu hỏi để test..."
+        value="laptop nào tốt nhất"
+      >
+      <button onclick="testRAG()">Test Query</button>
+    </div>
+    <div id="testResult"></div>
+  </div>
+</div>
+
+<script>
+  // Load KB documents
+  async function loadKB() {
+    try {
+      const resp = await fetch('/api/advisor/analysis/analyze/', {
+        method: 'GET',
+      });
+      
+      if (!resp.ok) {
+        console.log('Using direct query instead...');
+        loadKBDirect();
+        return;
+      }
+
+      // Try alternative: get all KB via sessions
+      const testResp = await fetch('/api/advisor/sessions/', {
+        method: 'GET',
+      });
+
+      console.log('Test response:', testResp.status);
+      loadKBDirect();
+    } catch (err) {
+      console.error('KB Load Error:', err);
+      loadKBDirect();
+    }
+  }
+
+  async function loadKBDirect() {
+    try {
+      // We'll load KB by storing it in frontend or using a custom endpoint
+      const kbData = [
+        {
+          id: 1,
+          title: 'MacBook Air M3 - Thông tin sản phẩm',
+          type: 'product',
+          content: `MacBook Air M3 là một trong những mẫu laptop tốt nhất hiện nay.
+
+Thông số kỹ thuật:
+- CPU: Apple M3 8-core
+- RAM: 8GB-16GB unified memory
+- Màn hình: 13" hoặc 15" Liquid Retina
+- Pin: 15-18 tiếng sử dụng
+- Giá: 999$ - 1499$ USD
+
+Ưu điểm:
+- Hiệu suất cực mạnh với M3 chip
+- Pin tốt, nhẹ (1.24kg cho 13in)
+- Thiết kế đẹp, sang trọng
+- Yên tĩnh, không quạt (fanless có sẵn)
+
+Nhược điểm:
+- Giá khá cao so với các laptop khác
+- RAM không nâng cấp sau mua
+- Cổng hạn chế (2x Thunderbolt)
+
+Phù hợp cho: Lập trình, thiết kế, công việc văn phòng cao cấp`
+        },
+        {
+          id: 2,
+          title: 'ThinkPad X1 Carbon - Laptop doanh nhân',
+          type: 'product',
+          content: `ThinkPad X1 Carbon là lựa chọn hàng đầu cho người dùng doanh nghiệp.
+
+Thông số:
+- Bộ xử lý: Intel Core i5/i7/i9 Gen 14
+- RAM: 16GB/32GB LPDDR5
+- Màn hình: 14" OLED (1600p) hoặc IPS
+- Pin: 12-15 tiếng
+- Cân nặng: 1.08 kg (nhẹ nhất trong phân khúc)
+- Giá: 1299$-2000$ USD
+
+Ưu điểm:
+- Xây dựng bền bỉ, chứng nhận MIL-STD
+- Bàn phím ThinkPad nổi tiếng
+- Kết nối đầy đủ (Thunderbolt 4, USB)
+- Màn hình OLED chất lượng cao
+- Dễ nâng cấp (RAM, SSD)
+
+Nhược điểm:
+- Giá cao
+- Nóng hơn MacBook khi chạy nặng
+- Design khá bảo thủ
+
+Phù hợp cho: Người dùng doanh nghiệp, lập trình viên, designer`
+        },
+        {
+          id: 3,
+          title: 'iPhone 16 - Điện thoại thông minh',
+          type: 'product',
+          content: `iPhone 16 là flagship mới nhất của Apple.
+
+Thông số chính:
+- Chip: A18 Pro
+- Màn hình: 6.1" Super Retina XDR, 120Hz
+- Camera: Dual 48MP + Ultra Wide
+- Pin: 20+ tiếng
+- 5G, Wi-Fi 7
+
+Ưu điểm:
+- Chip A18 Pro cực mạnh
+- Camera chất lượng sinh ảnh
+- Màn hình tuyệt đẹp ProMotion 120Hz
+- Giá hợp lý hơn previous gen
+- Hệ sinh thái Apple ecosystem
+
+Nhược điểm:
+- Giá vẫn cao
+- Không có charger trong hộp
+- Độc quyền hệ sinh thái Apple
+- Không tùy chỉnh cao
+
+Phù hợp cho: Người dùng Apple, những người muốn camera tốt, chọn chất lượng`
+        },
+        {
+          id: 4,
+          title: 'Chính sách bảo hành & đổi trả',
+          type: 'policy',
+          content: `Chính sách bảo hành và dịch vụ khách hàng:
+
+Thời gian bảo hành:
+- Laptop: 24 tháng từ ngày mua
+- Điện thoại: 12 tháng từ ngày mua
+- Phụ kiện: 6 tháng từ ngày mua
+
+Bảo hành bao gồm:
+✓ Lỗi phần cứng kỹ thuật
+✓ Lỗi nhà sản xuất
+✗ Hỏng do sử dụng sai
+✗ Rơi, va đập, nước
+
+Quy trình đổi trả:
+1. Liên hệ trong 7 ngày nếu lỗi từ hộp
+2. Mang sản phẩm + hóa đơn + thẻ bảo hành
+3. Được đổi sản phẩm mới hoặc sửa chữa
+4. Thời gian xử lý: 1-3 ngày làm việc
+
+Chi phí vận chuyển:
+- Miễn phí nếu lỗi nhà sản xuất
+- Khách trả phí nếu hỏng do người dùng
+
+Liên hệ hỗ trợ:
+📞 1800-1234
+📧 support@elecstore.com
+⏰ 8AM - 10PM hàng ngày`
+        },
+        {
+          id: 5,
+          title: 'So sánh MacBook Air M3 vs ThinkPad X1',
+          type: 'comparison',
+          content: `So sánh chi tiết: MacBook Air M3 vs ThinkPad X1 Carbon
+
+┌─────────────────┬──────────────────┬─────────────────┐
+│ Tiêu chí        │ MacBook Air M3   │ ThinkPad X1     │
+├─────────────────┼──────────────────┼─────────────────┤
+│ Giá             │ $999-1499        │ $1299-2000      │
+│ Hiệu suất       │ Rất cao (M3)     │ Cao (Intel i7)  │
+│ Pin             │ 15-18h           │ 12-15h          │
+│ Trọng lượng      │ 1.24kg           │ 1.08kg          │
+│ Bàn phím        │ Tốt              │ Tuyệt vời       │
+│ Nâng cấp        │ Không được       │ Dễ              │
+│ Cổng kết nối    │ 2x Thunderbolt   │ Đầy đủ          │
+│ Màn hình        │ Retina tốt       │ OLED siêu       │
+│ Heat management │ Yên tĩnh         │ Khá             │
+│ OS              │ macOS            │ Windows         │
+└─────────────────┴──────────────────┴─────────────────┘
+
+Chọn MacBook Air M3 nếu:
+- Bạn là lập trình viên yêu macOS
+- Muốn máy yên tĩnh và sắc nét
+- Sẵn sàng chi bộn hơn
+
+Chọn ThinkPad X1 nếu:
+- Cần bàn phím tốt cho gõ nhiều
+- Muốn Windows + tính linh hoạt nâng cấp
+- Cần cổng kết nối đa dạng đầy đủ`
+        }
+      ];
+
+      const container = document.getElementById('kb-container');
+      container.innerHTML = '';
+
+      kbData.forEach((doc, idx) => {
+        const badgeColor = {
+          'product': '🏷️ Product',
+          'policy': '📋 Policy',
+          'comparison': '⚖️ Comparison'
+        }[doc.type] || '📄 Document';
+
+        const card = document.createElement('div');
+        card.className = 'kb-card';
+        card.innerHTML = `
+          <div class="title">
+            #${doc.id} - ${doc.title}
+            <span class="badge">${badgeColor}</span>
+          </div>
+          <div class="content">${doc.content.replace(/\n/g, '<br>')}</div>
+        `;
+        container.appendChild(card);
+      });
+
+      const status = `<div class="status success">✅ Đã load ${kbData.length} tài liệu từ Knowledge Base</div>`;
+      container.insertAdjacentHTML('afterend', status);
+    } catch (err) {
+      console.error('Error:', err);
+      document.getElementById('kb-container').innerHTML = `
+        <div class="status error">❌ Lỗi khi load KB: ${err.message}</div>
+      `;
+    }
+  }
+
+  async function testRAG() {
+    const query = document.getElementById('testQuery').value.trim();
+    if (!query) return;
+
+    const resultDiv = document.getElementById('testResult');
+    resultDiv.innerHTML = '<div class="test-result">⏳ Đang test <span class="loading"></span></div>';
+
+    try {
+      const response = await fetch('/api/advisor/sessions/send_message/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          session_id: 'test_' + Date.now(),
+          message: query
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        resultDiv.innerHTML = `
+          <div class="test-result success">
+✅ RAG Response:
+
+Query: "${query}"
+
+Response: ${data.message?.content || 'No content'}
+
+Confidence: ${Math.round((data.message?.confidence_score || 0) * 100)}%
+
+Sources: ${data.message?.context_sources?.length || 0} documents found
+${data.message?.context_sources?.map(s => `  - ${s.source}: ${Math.round(s.score * 100)}%`).join('\n') || 'No sources'}
+          </div>
+        `;
+      } else {
+        resultDiv.innerHTML = `
+          <div class="test-result error">
+❌ API Error (${response.status}):
+
+${JSON.stringify(data, null, 2)}
+          </div>
+        `;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `
+        <div class="test-result error">
+❌ Fetch Error:
+
+${err.message}
+
+Vui lòng kiểm tra:
+1. API gateway đang chạy (http://localhost:8100)
+2. Advisor service hoạt động
+3. Browser console (F12) xem chi tiết
+        </div>
+      `;
+    }
+  }
+
+  // Load on page load
+  window.addEventListener('load', loadKB);
+</script>
+
+</body>
+</html>

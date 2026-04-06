@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tích hợp AI Advisor - Hướng dẫn</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+        }
+        
+        h3 {
+            color: #555;
+            margin-top: 20px;
+        }
+        
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            overflow-x: auto;
+        }
+        
+        code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .highlight {
+            background-color: #fffacd;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        .warning {
+            background: #ffe6e6;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background: #e6f7ff;
+            border-left: 4px solid #1890ff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🤖 Hướng dẫn tích hợp AI Advisor vào Website</h1>
+
+    <h2>📋 Mục lục</h2>
+    <ol>
+        <li>Cài đặt dịch vụ Advisor</li>
+        <li>Tích hợp chatbot vào website</li>
+        <li>Cấu hình API</li>
+        <li>Tải Knowledge Base</li>
+        <li>Test & Debug</li>
+    </ol>
+
+    <h2>1️⃣ Cài đặt dịch vụ Advisor</h2>
+
+    <h3>a) Cách 1: Sử dụng Docker Compose (Khuyến nghị)</h3>
+    
+    <pre><code># Khởi động tất cả services bao gồm advisor-service
+cd /path/to/ktra1
+docker-compose up -d
+
+# Kiểm tra advisor-service đang chạy
+docker-compose ps | grep advisor
+    
+# Logs
+docker-compose logs -f advisor-service</code></pre>
+
+    <h3>b) Cách 2: Chạy trực tiếp (Development)</h3>
+    
+    <pre><code># Tạo virtual environment
+cd advisor_service
+python -m venv venv
+
+# Activate
+# Windows
+venv\Scripts\activate
+# Linux/Mac
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variables
+cp .env.example .env
+# Chỉnh sửa .env
+
+# Migration
+python manage.py migrate
+
+# Tải KB sample
+python manage.py load_kb --sample
+
+# Chạy server
+python manage.py runserver 0.0.0.0:8003</code></pre>
+
+    <div class="success">
+        <strong>✓ Kiểm tra:</strong> Truy cập http://localhost:8003/admin và đăng nhập
+    </div>
+
+    <h2>2️⃣ Tích hợp Chatbot vào Website</h2>
+
+    <h3>Phương pháp A: Nhúng trực tiếp (Đơn giản)</h3>
+
+    <p>Thêm đoạn code sau vào cuối phần <span class="highlight">&lt;body&gt;</span> của tất cả trang HTML:</p>
+
+    <pre><code>&lt;!-- AI Advisor Chatbot --&gt;
+&lt;script src="/ai-advisor.js"&gt;&lt;/script&gt;
+&lt;link rel="stylesheet" href="/ai-advisor.css"&gt;</code></pre>
+
+    <h3>Phương pháp B: Sử dụng iframe (An toàn hơn)</h3>
+
+    <pre><code>&lt;iframe 
+    src="/ai-advisor-embed.html" 
+    style="position: fixed; right: 20px; bottom: 20px; width: 430px; height: 600px; border: none; border-radius: 12px; z-index: 9999;"
+&gt;&lt;/iframe&gt;</code></pre>
+
+    <h3>Phương pháp C: Tích hợp vào component React (Nên dùng)</h3>
+
+    <pre><code>import React, { useEffect } from 'react';
+
+export function AIAdvisor() {
+  useEffect(() => {
+    // Load script
+    const script = document.createElement('script');
+    script.src = '/ai-advisor.js';
+    script.async = true;
+    document.body.appendChild(script);
+    
+    // Load styles
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = '/ai-advisor.css';
+    document.head.appendChild(link);
+  }, []);
+
+  return &lt;&gt; {/* Styles will be injected */} &lt;/&gt;;
+}</code></pre>
+
+    <h3>Cách tích hợp vào trang index.html</h3>
+
+    <pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;title&gt;E-Commerce&lt;/title&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;!-- Nội dung website --&gt;
+    
+    &lt;!-- AI Advisor - Thêm dòng này ở cuối body --&gt;
+    &lt;iframe src="/ai-advisor.html" 
+            style="position: fixed; right: 20px; bottom: 20px; width: 430px; height: 600px; border: none; border-radius: 12px; z-index: 9999; box-shadow: 0 5px 40px rgba(0,0,0,0.16);"&gt;
+    &lt;/iframe&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+
+    <h2>3️⃣ Cấu hình API</h2>
+
+    <h3>Cập nhật nginx.conf để proxy API</h3>
+
+    <pre><code>server {
+    listen 80;
+    server_name _;
+
+    # ... existing config ...
+
+    # API Gateway
+    location /api/advisor/ {
+        proxy_pass http://advisor-service:8003/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Frontend
+    location / {
+        root /usr/share/nginx/html;
+        try_files $uri $uri/ /index.html;
+    }
+}</code></pre>
+
+    <h3>Cập nhật CORS trong advisor_service/settings.py</h3>
+
+    <pre><code>CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://localhost:8100",  # Gateway
+    "http://172.17.0.1:3000",
+]</code></pre>
+
+    <h2>4️⃣ Tải Knowledge Base</h2>
+
+    <h3>Tải KB trong Docker</h3>
+
+    <pre><code># Vào shell của advisor-service
+docker-compose exec advisor-service bash
+
+# Tải KB sample
+python manage.py load_kb --sample
+
+# Hoặc tải từ file JSON
+python manage.py load_kb --file /path/to/kb.json</code></pre>
+
+    <h3>Cấu trúc file kb.json</h3>
+
+    <pre><code>[
+  {
+    "title": "MacBook Air M3 - Thông tin sản phẩm",
+    "content": "Nội dung chi tiết về sản phẩm...",
+    "content_type": "product",
+    "tags": ["apple", "laptop", "m3"],
+    "is_active": true
+  },
+  {
+    "title": "Chính sách bảo hành",
+    "content": "Nội dung chính sách...",
+    "content_type": "policy",
+    "tags": ["warranty", "return"],
+    "is_active": true
+  }
+]</code></pre>
+
+    <h2>5️⃣ Test & Debug</h2>
+
+    <h3>Test API Chatbot</h3>
+
+    <pre><code># Start chat
+curl -X POST http://localhost:8003/api/advisor/sessions/start_chat/ \
+  -H "Content-Type: application/json" \
+  -d '{"conversation_type": "consultation"}'
+
+# Send message
+curl -X POST http://localhost:8003/api/advisor/sessions/send_message/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "YOUR_SESSION_ID",
+    "message": "Hỏi về laptop Apple"
+  }'</code></pre>
+
+    <h3>Test Behavior Analysis API</h3>
+
+    <pre><code>curl -X POST http://localhost:8003/api/advisor/analysis/analyze/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": 1,
+    "behavior_data": {
+      "total_purchases": 5,
+      "avg_spending": 15000000,
+      "avg_session_duration": 30,
+      "product_view_count": 50,
+      "days_since_last_purchase": 10,
+      "purchase_frequency": 2.0,
+      "product_variety_score": 0.8
+    }
+  }'</code></pre>
+
+    <div class="warning">
+        <strong>⚠️ Lưu ý:</strong> 
+        <ul>
+            <li>Đảm bảo CORS được cấu hình đúng</li>
+            <li>Kiểm tra API đang hoạt động trước khi tích hợp</li>
+            <li>Test trên localhost trước khi deploy production</li>
+        </ul>
+    </div>
+
+    <h2>📊 Architecture Overview</h2>
+
+    <pre><code>┌─────────────────────────────────────────────────┐
+│                   Gateway (Nginx)                │
+│               ├─ Frontend Static                  │
+│               ├─ Other Services                   │
+│               └─ Advisor Service Router           │
+└──────────────────────┬──────────────────────────┘
+                       │
+        ┌──────────────┴──────────────┐
+        │                             │
+    ┌───▼─────────┐          ┌───────▼────┐
+    │  RAG Engine │          │  ML Models │
+    │  + ChromaDB │          │ Behavior   │
+    └─────────────┘          │ Classifier │
+        │                    └────────────┘
+        │
+    ┌───▼──────────────┐
+    │ Advisor Service  │
+    │   Django        │
+    │                 │
+    │ ├─ Chat API     │
+    │ ├─ KB Mgmt      │
+    │ └─ Analytics    │
+    └─────────────────┘
+        │
+    ┌───▼──────────────┐
+    │  PostgreSQL DB   │
+    │  + Redis Cache   │
+    │  + ChromaDB      │
+    └──────────────────┘</code></pre>
+
+    <h2>🚀 Deployment Checklist</h2>
+
+    <table>
+        <tr>
+            <th>Mục</th>
+            <th>Mô tả</th>
+            <th>Status</th>
+        </tr>
+        <tr>
+            <td>Docker Setup</td>
+            <td>Cấu hình docker-compose.yml</td>
+            <td>✓</td>
+        </tr>
+        <tr>
+            <td>Database Migration</td>
+            <td>Chạy python manage.py migrate</td>
+            <td>⏳</td>
+        </tr>
+        <tr>
+            <td>Load KB</td>
+            <td>Tải dữ liệu Knowledge Base</td>
+            <td>⏳</td>
+        </tr>
+        <tr>
+            <td>Frontend Integration</td>
+            <td>Tích hợp ai-advisor.html vào website</td>
+            <td>⏳</td>
+        </tr>
+        <tr>
+            <td>CORS Configuration</td>
+            <td>Cấu hình CORS cho API</td>
+            <td>⏳</td>
+        </tr>
+        <tr>
+            <td>Testing</td>
+            <td>Test chatbot hoạt động</td>
+            <td>⏳</td>
+        </tr>
+        <tr>
+            <td>Production Deploy</td>
+            <td>Deploy lên production server</td>
+            <td>⏳</td>
+        </tr>
+    </table>
+
+    <h2>🎨 Tùy chỉnh giao diện</h2>
+
+    <p>Sửa màu sắc, font, kích thước trong ai-advisor.html:</p>
+
+    <pre><code>/* Thay đổi màu chính */
+.chatbot-toggle-btn {
+    background: linear-gradient(135deg, #YOUR_COLOR_1 0%, #YOUR_COLOR_2 100%);
+}
+
+/* Thay đổi kích thước */
+.chatbot-window {
+    width: 500px;  /* Thay từ 430px */
+    height: 700px; /* Thay từ 600px */
+}</code></pre>
+
+    <h2>📞 Support</h2>
+
+    <p>Nếu gặp vấn đề:</p>
+    <ul>
+        <li>Kiểm tra logs: <span class="highlight">docker-compose logs advisor-service</span></li>
+        <li>Test API endpoint: Sử dụng Postman hoặc curl</li>
+        <li>Kiểm tra console browser: F12 → Console</li>
+        <li>Đảm bảo KB đã được tải</li>
+    </ul>
+
+    <div class="success">
+        <strong>✓ Hoàn tất!</strong> AI Advisor đã sẵn sàng. Mở website và test chatbot! 🎉
+    </div>
+
+</div>
+
+</body>
+</html>

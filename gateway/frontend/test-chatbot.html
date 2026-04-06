@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🤖 Test AI Advisor Chatbot</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+    }
+    
+    h1 {
+      color: #667eea;
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-top: 30px;
+    }
+    
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .section {
+      border: 1px solid #ddd;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    
+    .section h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+      background: #e6ffed;
+      color: #52c41a;
+      font-weight: bold;
+    }
+    
+    .status.warning {
+      background: #fff1f0;
+      color: #ff4d4f;
+    }
+    
+    button {
+      padding: 10px 20px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 5px 10px 0;
+    }
+    
+    button:hover {
+      background: #764ba2;
+    }
+    
+    .link-box {
+      background: #f0f0f0;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 15px 0;
+    }
+    
+    .link-box a {
+      display: inline-block;
+      margin: 5px 0;
+      color: #667eea;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    
+    .link-box a:hover {
+      text-decoration: underline;
+    }
+    
+    .chatbot-container {
+      min-height: 600px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .info-text {
+      color: #666;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🤖 Test AI Advisor Chatbot pada localhost</h1>
+  <p class="info-text">Kiểm tra hệ thống AI Advisor hoạt động trên localhost:8100</p>
+  
+  <div class="grid">
+    <!-- Left: Info & Tools -->
+    <div class="section">
+      <h2>📋 Kiểm tra Hệ thống</h2>
+      
+      <div class="status">✓ Gateway: Chạy trên port 8100</div>
+      <div class="status">✓ Advisor Service: Chạy trên port 8107</div>
+      <div class="status">✓ Frontend: Sẵn sàng</div>
+      
+      <h3>🔗 Các đường link hữu ích</h3>
+      <div class="link-box">
+        <p><strong>Admin Interface:</strong></p>
+        <a href="http://localhost:8107/admin" target="_blank">→ Admin Dashboard (8107)</a>
+        
+        <p><strong>API Endpoints:</strong></p>
+        <a href="http://localhost:8107/api/advisor/" target="_blank">→ API Root (8107)</a>
+        
+        <p><strong>Qua Gateway:</strong></p>
+        <a href="http://localhost:8100/api/advisor/" target="_blank">→ API via Gateway (8100)</a>
+      </div>
+      
+      <h3>🧪 Test API</h3>
+      <button onclick="testChatAPI()">Test Chat API</button>
+      <button onclick="testBehaviorAPI()">Test Behavior API</button>
+      
+      <h3>💎 Thông tin</h3>
+      <div class="info-text">
+        <p><strong>Services chạy:</strong></p>
+        <ul>
+          <li>Gateway (Nginx): 8100</li>
+          <li>Advisor Service: 8107</li>
+          <li>Advisor DB: 5435</li>
+          <li>Redis: 6379</li>
+        </ul>
+      </div>
+      
+      <h3>📚 Knowledge Base</h3>
+      <div class="info-text">
+        ✓ 5 documents loaded<br>
+        ✓ Sản phẩm (Laptop, Mobile)<br>
+        ✓ Chính sách bảo hành<br>
+        ✓ So sánh sản phẩm
+      </div>
+    </div>
+    
+    <!-- Right: Chatbot Embed -->
+    <div class="section">
+      <h2>💬 AI Advisor Chatbot</h2>
+      <p class="info-text">Chatbot sẽ hiển thị trong iframe bên dưới. Hãy hỏi tôi về sản phẩm!</p>
+      
+      <div class="chatbot-container">
+        <iframe 
+          id="advisor-iframe"
+          src="http://localhost:8100/ai-advisor.html"
+          style="width: 100%; height: 100%; border: none;">
+        </iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function testChatAPI() {
+    const sessionId = 'test_' + Date.now();
+    const message = 'Laptop nào tốt nhất cho lập trình?';
+    
+    console.log('Testing Chat API...');
+    console.log('Session ID:', sessionId);
+    console.log('Message:', message);
+    
+    fetch('/api/advisor/sessions/send_message/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        session_id: sessionId,
+        message: message
+      })
+    })
+    .then(response => {
+      console.log('Response Status:', response.status);
+      return response.json();
+    })
+    .then(data => {
+      console.log('✅ API Response:', data);
+      alert('✅ Chat API hoạt động!\n\n' + 
+            'Message: ' + (data.message?.content || 'No content') + '\n' +
+            'Confidence: ' + Math.round((data.message?.confidence_score || 0) * 100) + '%');
+    })
+    .catch(error => {
+      console.error('❌ Error:', error);
+      alert('❌ Error:\n' + error.message);
+    });
+  }
+  
+  function testBehaviorAPI() {
+    console.log('Testing Behavior Analysis API...');
+    
+    fetch('/api/advisor/analysis/analyze/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        user_id: 1,
+        behavior_data: {
+          total_purchases: 5,
+          avg_spending: 15000000,
+          avg_session_duration: 30,
+          product_view_count: 50,
+          days_since_last_purchase: 10
+        }
+      })
+    })
+    .then(r => r.json())
+    .then(data => {
+      console.log('✅ Behavior Analysis:', data);
+      const analysis = data.analysis;
+      alert('✅ Behavior Analysis hoạt động!\n\n' +
+            'Segment: ' + analysis.predicted_segment + '\n' +
+            'Churn Risk: ' + Math.round(analysis.probability_scores.churn_risk * 100) + '%\n' +
+            'Loyalty: ' + Math.round(analysis.probability_scores.loyalty_score * 100) + '%');
+    })
+    .catch(err => {
+      console.error('❌ Error:', err);
+      alert('❌ Error:\n' + err.message);
+    });
+  }
+</script>
+
+</body>
+</html>

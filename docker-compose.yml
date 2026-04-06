@@ -14,6 +14,7 @@ services:
       - mobile-service
       - cart-service
       - order-service
+      - advisor-service
 
   customer-service:
     build: ./customer_service
@@ -205,6 +206,53 @@ services:
       retries: 20
       start_period: 10s
 
+  advisor-service:
+    build: ./advisor_service
+    container_name: advisor-service
+    env_file:
+      - ./advisor_service/.env
+    volumes:
+      - ./advisor_service:/app
+      - advisor_data:/app/chroma_db
+    depends_on:
+      advisor-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8107:8003"
+    environment:
+      - DB_HOST=advisor-db
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://redis:6379
+      - CELERY_RESULT_BACKEND=redis://redis:6379
+
+  advisor-db:
+    image: postgres:16-alpine
+    container_name: advisor-db
+    environment:
+      POSTGRES_DB: advisor_db
+      POSTGRES_USER: advisor_user
+      POSTGRES_PASSWORD: advisor_pass
+    ports:
+      - "5435:5432"
+    volumes:
+      - advisor_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
 volumes:
   customer_db_data:
   staff_db_data:
@@ -212,3 +260,6 @@ volumes:
   mobile_db_data:
   cart_db_data:
   order_db_data:
+  advisor_db_data:
+  advisor_data:
+  redis_data:

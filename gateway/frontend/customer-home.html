@@ -37,5 +37,40 @@
   <script>
     UI.mountCustomerHome();
   </script>
+
+  <!-- Ensure Main Page doesn't hide chatbot and prevent shadow from blocking interactions -->
+  <style>
+    body {
+      position: relative;
+    }
+    main.page {
+      position: relative;
+      z-index: 1;
+    }
+    #ai-advisor-frame {
+      visibility: visible !important;
+      display: block !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+    }
+  </style>
+
+  <!-- 🤖 AI Advisor Chatbot -->
+  <iframe 
+    id="ai-advisor-frame"
+    src="/ai-advisor.html" 
+    style="position: fixed; 
+           right: 20px; 
+           bottom: 20px; 
+           width: 430px; 
+           height: 600px; 
+           border: none; 
+           border-radius: 12px; 
+           z-index: 99999;
+           box-shadow: none;
+           background: white;
+           pointer-events: auto;"
+    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share">
+  </iframe>
 </body>
 </html>

@@ -1,0 +1,575 @@
+<!--
+AI Advisor Chatbot Component
+Tích hợp chatbot AI advisor vào trang web e-commerce
+-->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Advisor - Tư vấn thông minh</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .ai-advisor-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            z-index: 9999;
+        }
+
+        .chatbot-toggle-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 28px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .chatbot-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .chatbot-toggle-btn.active {
+            background: linear-gradient(135deg, #764ba2 0%, #f093fb 100%);
+        }
+
+        .chatbot-window {
+            width: 430px;
+            height: 600px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 40px rgba(0, 0, 0, 0.16);
+            display: none;
+            flex-direction: column;
+            animation: slideUp 0.3s ease;
+        }
+
+        .chatbot-window.active {
+            display: flex;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chatbot-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chatbot-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chatbot-header-subtitle {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .chatbot-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+        }
+
+        .chatbot-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .chatbot-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            word-wrap: break-word;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+
+        .message.user .message-bubble {
+            background: #667eea;
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+
+        .message.assistant .message-bubble {
+            background: #f0f0f0;
+            color: #333;
+            border-radius: 18px 18px 18px 4px;
+        }
+
+        .message-sources {
+            display: none; /* Ẩn phần "Từ nguồn" */
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+            padding: 0 12px;
+        }
+
+        .source-item {
+            display: inline-block;
+            background: #e8e8e8;
+            padding: 2px 8px;
+            border-radius: 12px;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+
+        .chatbot-input-area {
+            padding: 16px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chatbot-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            padding: 10px 16px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chatbot-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .chatbot-send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chatbot-send-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .chatbot-send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #999;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                opacity: 0.5;
+                transform: translateY(0);
+            }
+            30% {
+                opacity: 1;
+                transform: translateY(-10px);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            margin: auto;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .empty-state-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .confidence-badge {
+            display: none; /* Ẩn độ chính xác */
+            font-size: 11px;
+            background: #e8f0fe;
+            color: #1967d2;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .chatbot-window {
+                width: 100%;
+                height: 100%;
+                border-radius: 0;
+                position: fixed;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                right: 0;
+            }
+
+            .chatbot-header {
+                border-radius: 0;
+            }
+
+            .message-bubble {
+                max-width: 90%;
+            }
+        }
+
+        /* Scrollbar styling */
+        .chatbot-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chatbot-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .chatbot-messages::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .chatbot-messages::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+
+<div class="ai-advisor-container">
+    <!-- Toggle Button -->
+    <button class="chatbot-toggle-btn" id="chatbotToggle" title="Mở AI Advisor">
+        💬
+    </button>
+
+    <!-- Chat Window -->
+    <div class="chatbot-window" id="chatbotWindow">
+        <!-- Header -->
+        <div class="chatbot-header">
+            <div>
+                <h3>🤖 AI Advisor</h3>
+                <div class="chatbot-header-subtitle">Tư vấn thông minh 24/7</div>
+            </div>
+            <button class="chatbot-close-btn" id="chatbotClose">✕</button>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="empty-state">
+                <div class="empty-state-icon">👋</div>
+                <div class="empty-state-title">Xin chào!</div>
+                <div>Tôi là AI Advisor, hãy hỏi tôi về sản phẩm của chúng tôi</div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="chatbot-input-area">
+            <input 
+                type="text" 
+                class="chatbot-input" 
+                id="chatbotInput" 
+                placeholder="Nhập câu hỏi của bạn..."
+                autocomplete="off"
+            >
+            <button class="chatbot-send-btn" id="chatbotSend">📤</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    class AIAdvisor {
+        constructor() {
+            this.sessionId = this.generateSessionId();
+            this.apiBaseUrl = this.getApiUrl();
+            this.isLoading = false;
+            
+            this.elements = {
+                toggle: document.getElementById('chatbotToggle'),
+                window: document.getElementById('chatbotWindow'),
+                close: document.getElementById('chatbotClose'),
+                messages: document.getElementById('chatbotMessages'),
+                input: document.getElementById('chatbotInput'),
+                send: document.getElementById('chatbotSend'),
+            };
+            
+            this.init();
+        }
+
+        init() {
+            // Event listeners
+            this.elements.toggle.addEventListener('click', () => this.toggleWindow());
+            this.elements.close.addEventListener('click', () => this.toggleWindow());
+            this.elements.send.addEventListener('click', () => this.sendMessage());
+            this.elements.input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    this.sendMessage();
+                }
+            });
+
+            // Clear empty state on first message
+            this.elements.messages.onclick = () => {
+                if (this.elements.messages.querySelector('.empty-state')) {
+                    this.elements.messages.innerHTML = '';
+                }
+            };
+        }
+
+        generateSessionId() {
+            return 'session_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        getApiUrl() {
+            // Use gateway proxy to avoid CORS issues
+            // Always call through the gateway (port 8100 or current port)
+            const protocol = window.location.protocol;
+            const hostname = window.location.hostname;
+            const port = window.location.port ? `:${window.location.port}` : '';
+            return `${protocol}//${hostname}${port}/api`;
+        }
+
+        toggleWindow() {
+            this.elements.window.classList.toggle('active');
+            this.elements.toggle.classList.toggle('active');
+            if (this.elements.window.classList.contains('active')) {
+                setTimeout(() => this.elements.input.focus(), 300);
+            }
+        }
+
+        async sendMessage() {
+            const message = this.elements.input.value.trim();
+            if (!message || this.isLoading) return;
+
+            // Clear input
+            this.elements.input.value = '';
+
+            // Clear empty state
+            if (this.elements.messages.querySelector('.empty-state')) {
+                this.elements.messages.innerHTML = '';
+            }
+
+            // Add user message
+            this.addMessage('user', message);
+
+            // Show typing indicator
+            this.addTypingIndicator();
+
+            try {
+                // Call API
+                const response = await fetch(`${this.apiBaseUrl}/advisor/sessions/send_message/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        session_id: this.sessionId,
+                        message: message,
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Remove typing indicator
+                    this.removeTypingIndicator();
+
+                    // Add AI response
+                    this.addMessage(
+                        'assistant',
+                        data.message.content,
+                        data.message.context_sources,
+                        data.message.confidence_score
+                    );
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                this.removeTypingIndicator();
+                this.addMessage(
+                    'assistant',
+                    `Xin lỗi, có lỗi khi xử lý câu hỏi: ${error.message}`
+                );
+            }
+
+            // Scroll to bottom
+            this.scrollToBottom();
+        }
+
+        addMessage(role, content, sources = [], confidence = 0) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            
+            // Thêm confidence badge cho assistant messages
+            if (role === 'assistant' && confidence > 0) {
+                const confidencePercentage = Math.round(confidence * 100);
+                bubble.innerHTML = `
+                    ${this.escapeHtml(content)}
+                    <span class="confidence-badge">Độ chính xác: ${confidencePercentage}%</span>
+                `;
+            } else {
+                bubble.textContent = content;
+            }
+
+            messageDiv.appendChild(bubble);
+
+            // Thêm sources nếu có
+            if (role === 'assistant' && sources.length > 0) {
+                const sourcesDiv = document.createElement('div');
+                sourcesDiv.className = 'message-sources';
+                sourcesDiv.innerHTML = '<strong>Từ nguồn:</strong> ';
+                
+                sources.forEach((source, index) => {
+                    const sourceItem = document.createElement('span');
+                    sourceItem.className = 'source-item';
+                    sourceItem.textContent = `${source.title} (${Math.round(source.similarity * 100)}%)`;
+                    sourcesDiv.appendChild(sourceItem);
+                });
+
+                messageDiv.appendChild(sourcesDiv);
+            }
+
+            this.elements.messages.appendChild(messageDiv);
+            this.scrollToBottom();
+        }
+
+        addTypingIndicator() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'typing-indicator';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.innerHTML = '<div class="typing-indicator"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span></div>';
+            
+            messageDiv.appendChild(bubble);
+            this.elements.messages.appendChild(messageDiv);
+            this.scrollToBottom();
+        }
+
+        removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        scrollToBottom() {
+            this.elements.messages.scrollTop = this.elements.messages.scrollHeight;
+        }
+
+        escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        window.aiAdvisor = new AIAdvisor();
+    });
+</script>
+
+</body>
+</html>
