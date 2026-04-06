@@ -1,4 +1,4 @@
-const UI = (() => {
+﻿const UI = (() => {
   const state = {
     customerTokenKey: 'gw_customer_token',
     staffTokenKey: 'gw_staff_token',
@@ -145,7 +145,7 @@ const UI = (() => {
   };
 
   const fetchCatalog = async (query = '') => {
-    const url = `/customer/api/products/search/?q=${encodeURIComponent(query)}`;
+    const url = `http://localhost:8101/api/products/search/?q=${encodeURIComponent(query)}`;
     const res = await fetch(url, { headers: headersWithToken(state.customerTokenKey) });
     const data = await readJson(res);
     if (!res.ok) throw new Error(`Catalog load failed: ${res.status}`);
@@ -166,6 +166,7 @@ const UI = (() => {
       if (on) {
         logoutBtn.onclick = () => {
           localStorage.removeItem(state.customerTokenKey);
+          localStorage.removeItem('gw_customer_cart_id');
           showToast('Logged out successfully.', 'success');
           setTimeout(() => window.location.href = '/customer-ui/login/', 500);
         };
@@ -255,7 +256,7 @@ const UI = (() => {
         
         try {
           showToast('Logging in...', 'info');
-          const res = await fetch('/customer/api/auth/login/', {
+          const res = await fetch('http://localhost:8101/api/auth/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
@@ -265,6 +266,8 @@ const UI = (() => {
           
           if (res.ok && (data.access || data.token)) {
             const token = data.access || data.token;
+            // Clear old cart ID when switching users
+            localStorage.removeItem('gw_customer_cart_id');
             localStorage.setItem(state.customerTokenKey, token);
             console.log('Token saved, redirecting...');
             showToast('Login successful!', 'success');
@@ -300,7 +303,7 @@ const UI = (() => {
           output('customer-register-output', { error: 'Password and confirm password do not match.' });
           return;
         }
-        const res = await fetch('/customer/api/auth/register/', {
+        const res = await fetch('http://localhost:8101/api/auth/register/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, email, password }),
@@ -322,7 +325,7 @@ const UI = (() => {
     }
 
     try {
-      const endpoint = detail.type === 'laptop' ? `/laptops/${detail.id}/` : `/mobiles/${detail.id}/`;
+      const endpoint = detail.type === 'laptop' ? `http://localhost:8100/laptops/${detail.id}/?t=${Date.now()}` : `http://localhost:8100/mobiles/${detail.id}/?t=${Date.now()}`;
       const res = await fetch(endpoint);
       const data = await readJson(res);
       if (!res.ok) {
@@ -337,6 +340,31 @@ const UI = (() => {
       const customized = customizeProductNames(productToCustomize)[0];
       data.name = customized.name;
 
+      const hasToken = !!localStorage.getItem(state.customerTokenKey);
+      const isOutOfStock = data.stock === 0;
+      const stockStatus = isOutOfStock 
+        ? `<p style="color: #EF4444; font-weight: 600;">❌ Hết hàng</p>`
+        : `<p style="color: #10B981; font-weight: 600;">✓ Còn ${data.stock} sản phẩm</p>`;
+      
+      const actionSection = hasToken 
+        ? `<section class="purchase-box">
+             <h3>Thêm vào giỏ hàng</h3>
+             <div class="row">
+               ${isOutOfStock ? stockStatus : `<input id="detail-qty" type="number" min="1" max="${data.stock}" value="1" placeholder="Số lượng" />`}
+             </div>
+             <div class="actions">
+               <button class="btn primary" id="detail-add-btn" type="button" ${isOutOfStock ? 'disabled' : ''}>
+                 ${isOutOfStock ? 'Sản phẩm đã hết hàng' : 'Thêm vào giỏ hàng'}
+               </button>
+             </div>
+           </section>`
+        : `<section class="purchase-box">
+             <p class="login-hint">Vui lòng <a href="/customer-ui/login/">đăng nhập</a> để mua hàng</p>
+             <div class="actions">
+               <a class="btn primary" href="/customer-ui/login/">Đăng nhập</a>
+             </div>
+           </section>`;
+
       holder.innerHTML = `
         <article class="detail-shell">
           <section class="card panel detail-media-card">
@@ -349,146 +377,96 @@ const UI = (() => {
             <h1>${data.name}</h1>
             <p class="price detail-price">${formatPrice(data.price)}</p>
             <div class="detail-meta">
-              <p><strong>Brand:</strong> ${data.brand}</p>
-              <p><strong>Specifications:</strong> ${data.specs}</p>
-              <p><strong>Stock:</strong> ${data.stock}</p>
+              <p><strong>Hãng sản xuất:</strong> ${data.brand}</p>
+              <p><strong>Thông số:</strong> ${data.specs}</p>
+              <p><strong>Số lượng có sẵn:</strong> ${stockStatus}</p>
             </div>
-
-            <section class="purchase-box">
-              <h3>Quick Purchase</h3>
-              <p id="detail-cart-hint" class="muted-text">Loading cart...</p>
-              <div class="row">
-                <select id="detail-cart-select"></select>
-              <input id="detail-qty" type="number" min="1" value="1" placeholder="Quantity" />
-            </div>
-            <div class="actions">
-              <button class="btn ghost" id="detail-create-cart-btn" type="button">Create New Cart</button>
-              <button class="btn primary" id="detail-add-btn" type="button">Add to Cart</button>
-              </div>
-            </section>
+            ${actionSection}
           </section>
         </article>
       `;
 
-      const addBtn = $('detail-add-btn');
-      const createBtn = $('detail-create-cart-btn');
-      const cartSelect = $('detail-cart-select');
-      const hint = $('detail-cart-hint');
-
-      const setAuthRequired = () => {
-        hint.textContent = 'You must log in to add products to cart.';
-        cartSelect.innerHTML = '<option value="">Not logged in</option>';
-        addBtn.disabled = true;
-        createBtn.disabled = true;
-      };
-
-      const getHasToken = () => !!localStorage.getItem(state.customerTokenKey);
-
-      const loadCarts = async () => {
-        const hasToken = getHasToken();
-        if (!hasToken) {
-          setAuthRequired();
-          return;
-        }
-
-        const cartsRes = await fetch('/customer/api/carts/', {
-          headers: headersWithToken(state.customerTokenKey),
-        });
-        const carts = await readJson(cartsRes);
-
-        if (!cartsRes.ok) {
-          hint.textContent = 'Failed to load cart list. Try logging in again.';
-          addBtn.disabled = true;
-          createBtn.disabled = false;
-          return;
-        }
-
-        const list = Array.isArray(carts) ? carts : [];
-        if (!list.length) {
-          hint.textContent = 'You don\'t have a cart yet. Click "Create New Cart" to start.';
-          cartSelect.innerHTML = '<option value="">No cart</option>';
-          addBtn.disabled = true;
-          createBtn.disabled = false;
-          return;
-        }
-
-        cartSelect.innerHTML = list
-          .map((c) => `<option value="${c.id}">Cart #${c.id} (${(c.items || []).length} items)</option>`)
-          .join('');
-        hint.textContent = 'Select a cart and quantity, then add to cart.';
+      if (hasToken && !isOutOfStock) {
+        const addBtn = $('detail-add-btn');
+        // Reset button state
         addBtn.disabled = false;
-        createBtn.disabled = false;
-      };
-
-      createBtn.addEventListener('click', async () => {
-        if (!getHasToken()) {
-          showToast('Please log in before creating a cart.', 'error');
-          return;
-        }
-        const resCreate = await fetch('/customer/api/carts/', {
-          method: 'POST',
-          headers: headersWithToken(state.customerTokenKey, true),
-          body: '{}',
-        });
-        output('customer-detail-output', { status: resCreate.status, data: await readJson(resCreate) });
-        await loadCarts();
-      });
-
-      addBtn.addEventListener('click', async () => {
-        const cart = Number(cartSelect.value);
-        const quantity = Number($('detail-qty').value || 1);
-        if (!cart) {
-          showToast('Please select a valid cart.', 'error');
-          return;
-        }
-        if (!quantity || quantity < 1) {
-          showToast('Quantity must be greater than or equal to 1.', 'error');
-          return;
-        }
-
-        const addRes = await fetch('/customer/api/cart-items/', {
-          method: 'POST',
-          headers: headersWithToken(state.customerTokenKey, true),
-          body: JSON.stringify({
-            cart,
-            product_type: detail.type,
-            product_id: detail.id,
-            quantity,
-          }),
-        });
-        const addData = await readJson(addRes);
-
-        const duplicateMsg = JSON.stringify(addData || {}).toLowerCase();
-        if (
-          addRes.status === 400
-          && duplicateMsg.includes('unique set')
-        ) {
-          const itemsRes = await fetch('/customer/api/cart-items/', {
-            headers: headersWithToken(state.customerTokenKey),
-          });
-          const items = await readJson(itemsRes);
-          const existing = (Array.isArray(items) ? items : []).find(
-            (it) => Number(it.cart) === cart && it.product_type === detail.type && Number(it.product_id) === detail.id,
-          );
-
-          if (existing) {
-            const patchRes = await fetch(`/customer/api/cart-items/${existing.id}/`, {
-              method: 'PATCH',
-              headers: headersWithToken(state.customerTokenKey, true),
-              body: JSON.stringify({ quantity: Number(existing.quantity || 0) + quantity }),
-            });
-            output('customer-detail-output', { status: patchRes.status, data: await readJson(patchRes) });
+        addBtn.addEventListener('click', async () => {
+          const quantity = Number($('detail-qty').value || 1);
+          if (!quantity || quantity < 1) {
+            showToast('Vui lòng nhập số lượng hợp lệ.', 'error');
             return;
           }
-        }
+          if (quantity > data.stock) {
+            showToast(`Số lượng không được vượt quá ${data.stock}.`, 'error');
+            return;
+          }
 
-        output('customer-detail-output', { status: addRes.status, data: addData });
-      });
+          try {
+            // Check if user is logged in first
+            const token = localStorage.getItem(state.customerTokenKey);
+            if (!token) {
+              showToast('Vui lòng đăng nhập trước khi thêm vào giỏ hàng.', 'error');
+              addBtn.disabled = false;
+              // Redirect to login after delay
+              setTimeout(() => window.location.href = '/customer-ui/login/', 1000);
+              return;
+            }
 
-      await loadCarts();
+            addBtn.disabled = true;
+            showToast('Đang thêm...', 'info');
+
+            // Get or create cart
+            let cartId = localStorage.getItem('gw_customer_cart_id');
+            if (!cartId) {
+              const createCartRes = await fetch('http://localhost:8100/cart/api/carts/', {
+                method: 'POST',
+                headers: headersWithToken(state.customerTokenKey, true),
+                body: '{}',
+              });
+              if (!createCartRes.ok) {
+                showToast('Lỗi khi tạo giỏ hàng.', 'error');
+                addBtn.disabled = false;
+                return;
+              }
+              const newCart = await readJson(createCartRes);
+              cartId = newCart.id;
+              localStorage.setItem('gw_customer_cart_id', cartId);
+            }
+
+            // Add item to cart
+            const addRes = await fetch('http://localhost:8100/cart/api/cart-items/', {
+              method: 'POST',
+              headers: headersWithToken(state.customerTokenKey, true),
+              body: JSON.stringify({
+                cart: Number(cartId),
+                product_type: detail.type,
+                product_id: detail.id,
+                quantity,
+                price: data.price,
+              }),
+            });
+
+            if (addRes.ok) {
+              showToast('Đã thêm vào giỏ hàng!', 'success');
+              setTimeout(() => {
+                window.location.href = '/customer-ui/cart/';
+              }, 600);
+            } else {
+              const err = await readJson(addRes);
+              const errorMsg = err.error || err.detail || 'Không thể thêm vào giỏ hàng';
+              showToast(`Lỗi: ${errorMsg}`, 'error');
+              addBtn.disabled = false;
+            }
+          } catch (error) {
+            console.error('Add to cart error:', error);
+            showToast('Lỗi: ' + error.message, 'error');
+            addBtn.disabled = false;
+          }
+        });
+      }
     } catch (err) {
-      holder.innerHTML = '<p>An error occurred while loading the product details. Please try again.</p>';
-      showToast('Failed to load product details.', 'error');
+      holder.innerHTML = '<p>Lỗi khi tải thông tin sản phẩm. Vui lòng thử lại.</p>';
+      console.error('Detail load error:', err);
     }
 
     renderCustomerTokenPill('customer-token-pill');
@@ -514,13 +492,14 @@ const UI = (() => {
 
     const loadCart = async () => {
       const [cartsRes, itemsRes, productMap] = await Promise.all([
-        fetch('/customer/api/carts/', { headers: headersWithToken(state.customerTokenKey) }),
-        fetch('/customer/api/cart-items/', { headers: headersWithToken(state.customerTokenKey) }),
+        fetch('http://localhost:8100/cart/api/carts/', { headers: headersWithToken(state.customerTokenKey) }),
+        fetch('http://localhost:8100/cart/api/cart-items/', { headers: headersWithToken(state.customerTokenKey) }),
         buildProductMap().catch(() => ({})),
       ]);
 
-      const items = await readJson(itemsRes);
-      const list = Array.isArray(items) ? items : [];
+      const itemsData = await readJson(itemsRes);
+      // Handle both array format and pagination format
+      const list = Array.isArray(itemsData) ? itemsData : (itemsData.results || []);
       
       if (!list.length) {
         cartContainer.innerHTML = `
@@ -604,7 +583,7 @@ const UI = (() => {
             newQty = Math.max(1, newQty - 1);
           }
 
-          const patchRes = await fetch(`/customer/api/cart-items/${itemId}/`, {
+          const patchRes = await fetch(`http://localhost:8100/cart/api/cart-items/${itemId}/`, {
             method: 'PATCH',
             headers: headersWithToken(state.customerTokenKey, true),
             body: JSON.stringify({ quantity: newQty }),
@@ -622,7 +601,7 @@ const UI = (() => {
       document.querySelectorAll('.cart-item-remove').forEach((btn) => {
         btn.addEventListener('click', async (e) => {
           const itemId = Number(btn.dataset.itemId);
-          const deleteRes = await fetch(`/customer/api/cart-items/${itemId}/`, {
+          const deleteRes = await fetch(`http://localhost:8100/cart/api/cart-items/${itemId}/`, {
             method: 'DELETE',
             headers: headersWithToken(state.customerTokenKey),
           });
@@ -639,8 +618,65 @@ const UI = (() => {
       // Bind checkout button
       const checkoutBtn = $('checkout-btn');
       if (checkoutBtn) {
-        checkoutBtn.addEventListener('click', () => {
-          showToast('Checkout feature is under development...', 'info');
+        checkoutBtn.addEventListener('click', async () => {
+          if (!list.length) {
+            showToast('Giỏ hàng trống, không thể thanh toán.', 'error');
+            return;
+          }
+
+          try {
+            checkoutBtn.disabled = true;
+            showToast('Đang tạo đơn hàng...', 'info');
+
+            // Create order from cart items
+            const orderItems = list.map(item => ({
+              product_type: item.product_type,
+              product_id: item.product_id,
+              quantity: item.quantity,
+              price: productMap[`${item.product_type}:${item.product_id}`]?.price || 0,
+            }));
+
+            const createOrderRes = await fetch('http://localhost:8100/order/api/orders/', {
+              method: 'POST',
+              headers: headersWithToken(state.customerTokenKey, true),
+              body: JSON.stringify({
+                items: orderItems,
+                total_amount: subtotal,
+                status: 'confirmed',
+              }),
+            });
+
+            if (!createOrderRes.ok) {
+              const err = await readJson(createOrderRes);
+              showToast(`Lỗi tạo đơn: ${err.detail || 'Lỗi không xác định'}`, 'error');
+              checkoutBtn.disabled = false;
+              return;
+            }
+
+            const order = await readJson(createOrderRes);
+            console.log('Order created:', order);
+
+            // Delete all cart items
+            const deletePromises = list.map(item =>
+              fetch(`http://localhost:8100/cart/api/cart-items/${item.id}/`, {
+                method: 'DELETE',
+                headers: headersWithToken(state.customerTokenKey),
+              })
+            );
+            await Promise.all(deletePromises);
+
+            // Clear saved cart ID
+            localStorage.removeItem('gw_customer_cart_id');
+
+            showToast('Đơn hàng đã được tạo thành công!', 'success');
+            setTimeout(() => {
+              window.location.href = '/customer-ui/orders/';
+            }, 1000);
+          } catch (error) {
+            console.error('Checkout error:', error);
+            showToast('Lỗi: ' + error.message, 'error');
+            checkoutBtn.disabled = false;
+          }
         });
       }
 
@@ -649,21 +685,7 @@ const UI = (() => {
       }
     };
 
-    $('customer-create-cart-btn')?.addEventListener('click', async () => {
-      const res = await fetch('/customer/api/carts/', {
-        method: 'POST',
-        headers: headersWithToken(state.customerTokenKey, true),
-        body: '{}',
-      });
-      if (res.ok) {
-        showToast('New cart created successfully.', 'success');
-        await loadCart();
-      } else {
-        showToast('Failed to create cart.', 'error');
-      }
-    });
 
-    $('customer-refresh-cart-btn')?.addEventListener('click', loadCart);
 
     renderCustomerTokenPill('customer-token-pill');
     loadCart();
@@ -679,7 +701,7 @@ const UI = (() => {
         
         try {
           showToast('Logging in...', 'info');
-          const res = await fetch('/staff/api/auth/login/', {
+          const res = await fetch('http://localhost:8102/api/auth/login/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password }),
@@ -728,7 +750,7 @@ const UI = (() => {
     };
 
     const loadProducts = async () => {
-      const res = await fetch('/staff/api/products/', { headers: headersWithToken(state.staffTokenKey) });
+      const res = await fetch('http://localhost:8102/api/products/', { headers: headersWithToken(state.staffTokenKey) });
       const data = await readJson(res);
       const list = (data.products || []).filter((p) => p.product_type === type);
       tbody.innerHTML = list.length ? list.map((p) => `
@@ -774,7 +796,7 @@ const UI = (() => {
     };
 
     $('staff-add-btn')?.addEventListener('click', async () => {
-      const res = await fetch('/staff/api/products/', {
+      const res = await fetch('http://localhost:8102/api/products/', {
         method: 'POST',
         headers: headersWithToken(state.staffTokenKey, true),
         body: JSON.stringify(payload(true)),
@@ -785,7 +807,7 @@ const UI = (() => {
     $('staff-edit-btn')?.addEventListener('click', async () => {
       const id = $('staff-product-id').value;
       const type = $('staff-product-type').value;
-      const res = await fetch(`/staff/api/products/${type}/${id}/`, {
+      const res = await fetch(`http://localhost:8102/api/products/${type}/${id}/`, {
         method: 'PUT',
         headers: headersWithToken(state.staffTokenKey, true),
         body: JSON.stringify(payload(false)),
@@ -796,7 +818,7 @@ const UI = (() => {
     $('staff-delete-btn')?.addEventListener('click', async () => {
       const id = $('staff-product-id').value;
       const type = $('staff-product-type').value;
-      const res = await fetch(`/staff/api/products/${type}/${id}/`, {
+      const res = await fetch(`http://localhost:8102/api/products/${type}/${id}/`, {
         method: 'DELETE',
         headers: headersWithToken(state.staffTokenKey),
       });
@@ -806,11 +828,77 @@ const UI = (() => {
     renderStaffTokenPill('staff-token-pill');
   };
 
+  const mountCustomerOrders = async () => {
+    const container = $('customer-orders-container');
+    if (!container) return;
+
+    try {
+      const ordersRes = await fetch('http://localhost:8100/order/api/orders/', {
+        headers: headersWithToken(state.customerTokenKey),
+      });
+
+      if (!ordersRes.ok) {
+        container.innerHTML = '<p>Lỗi khi tải đơn hàng.</p>';
+        return;
+      }
+
+      const allOrders = await readJson(ordersRes);
+      const orders = Array.isArray(allOrders) ? allOrders : (allOrders.results || []);
+
+      if (!orders.length) {
+        container.innerHTML = `
+          <div class="orders-empty">
+            <p>Bạn chưa có đơn hàng nào.</p>
+            <a class="btn primary" href="/customer-ui/">Tiếp tục mua sắm</a>
+          </div>
+        `;
+        return;
+      }
+
+      const ordersHtml = orders.map(order => `
+        <div class="card panel order-card" style="margin-bottom: 1.5rem;">
+          <div class="order-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid var(--line); padding-bottom: 1rem;">
+            <h3>Đơn hàng #${order.id}</h3>
+            <span class="badge" style="background: ${order.status === 'confirmed' ? 'var(--success)' : order.status === 'delivered' ? 'var(--accent)' : 'var(--ink-light)'}; color: white;">
+              ${order.status}
+            </span>
+          </div>
+          <div class="order-info" style="margin-bottom: 1rem;">
+            <p><strong>Ngày đặt:</strong> ${new Date(order.created_at).toLocaleString('vi-VN')}</p>
+            <p><strong>Tổng tiền:</strong> <strong style="color: var(--accent); font-size: 1.2rem;">${formatPrice(order.total_amount)}</strong></p>
+          </div>
+          <div class="order-items">
+            <h4 style="margin-bottom: 0.8rem;">Sản phẩm:</h4>
+            ${(order.items || []).map(item => `
+              <div style="display: flex; gap: 1rem; padding: 0.8rem; background: var(--bg); border-radius: var(--radius); margin-bottom: 0.5rem;">
+                <div style="flex: 1;">
+                  <p><strong>${capitalizeType(item.product_type)} #${item.product_id}</strong></p>
+                  <p style="color: var(--ink-light); font-size: 0.9rem;">Số lượng: ${item.quantity}</p>
+                </div>
+                <div style="text-align: right;">
+                  <p style="color: var(--accent); font-weight: 600;">${formatPrice(item.price)}</p>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      container.innerHTML = ordersHtml;
+    } catch (error) {
+      console.error('Orders load error:', error);
+      container.innerHTML = '<p>Lỗi khi tải đơn hàng: ' + error.message + '</p>';
+    }
+
+    renderCustomerTokenPill('customer-token-pill');
+  };
+
   return {
     mountCustomerHome,
     bindCustomerAuth,
     mountCustomerDetail,
     mountCustomerCart,
+    mountCustomerOrders,
     bindStaffAuth,
     mountStaffDashboard,
     mountStaffForm,
@@ -818,3 +906,9 @@ const UI = (() => {
     renderStaffTokenPill,
   };
 })();
+
+// Handle browser back/forward navigation
+window.addEventListener('popstate', () => {
+  location.reload();
+});
+

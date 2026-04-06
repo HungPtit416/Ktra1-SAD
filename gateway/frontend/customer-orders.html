@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đơn hàng của tôi | ElecStore</title>
+  <link rel="stylesheet" href="/assets/main.css?v=20260324c" />
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <a class="logo" href="/">ElecStore</a>
+      <nav class="nav">
+        <span class="pill" id="customer-token-pill">Not logged in</span>
+        <a class="btn ghost" href="/customer-ui/">Trang chủ</a>
+        <a class="btn ghost" href="/customer-ui/cart/">Giỏ hàng</a>
+        <button class="btn danger" id="customer-logout-btn" type="button" style="display:none;">Đăng xuất</button>
+      </nav>
+    </header>
+
+    <section class="card panel" style="margin-top: 2rem;">
+      <h1>Đơn hàng của tôi</h1>
+      <div id="customer-orders-container" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="/assets/app.js?v=20260324c"></script>
+  <script>
+    if (!localStorage.getItem('gw_customer_token')) {
+      document.body.innerHTML = '<main class="page"><section class="card panel" style="margin-top:2rem;text-align:center;"><p>Vui lòng đăng nhập để xem đơn hàng.</p><a class="btn primary" href="/customer-ui/login/">Đăng nhập</a></section></main>';
+    } else {
+      UI.mountCustomerOrders();
+    }
+  </script>
+</body>
+</html>

@@ -12,6 +12,8 @@ services:
       - staff-service
       - laptop-service
       - mobile-service
+      - cart-service
+      - order-service
 
   customer-service:
     build: ./customer_service
@@ -121,6 +123,70 @@ services:
     ports:
       - "8104:8000"
 
+  cart-service:
+    build: ./cart_service
+    container_name: cart-service
+    env_file:
+      - ./cart_service/.env
+    volumes:
+      - ./cart_service:/app
+    depends_on:
+      cart-db:
+        condition: service_healthy
+    ports:
+      - "8105:8000"
+
+  cart-db:
+    image: mysql:8.0
+    container_name: cart-db
+    environment:
+      MYSQL_DATABASE: cart_db
+      MYSQL_USER: cart_user
+      MYSQL_PASSWORD: cart_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3309:3306"
+    volumes:
+      - cart_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
+  order-service:
+    build: ./order_service
+    container_name: order-service
+    env_file:
+      - ./order_service/.env
+    volumes:
+      - ./order_service:/app
+    depends_on:
+      order-db:
+        condition: service_healthy
+    ports:
+      - "8106:8000"
+
+  order-db:
+    image: mysql:8.0
+    container_name: order-db
+    environment:
+      MYSQL_DATABASE: order_db
+      MYSQL_USER: order_user
+      MYSQL_PASSWORD: order_pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3310:3306"
+    volumes:
+      - order_db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+
   mobile-db:
     image: postgres:16-alpine
     container_name: mobile-db
@@ -144,3 +210,5 @@ volumes:
   staff_db_data:
   laptop_db_data:
   mobile_db_data:
+  cart_db_data:
+  order_db_data:

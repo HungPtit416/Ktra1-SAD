@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("SECRET_KEY", default="customer-secret")
+SECRET_KEY = env("SECRET_KEY", default="ecommerce-shared-secret-key-2026")
 DEBUG = env.bool("DEBUG", default=True)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "rest_framework_simplejwt",
+    "corsheaders",
     "customers",
     "carts",
 ]
@@ -26,6 +27,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -74,8 +76,8 @@ USE_TZ = True
 STATIC_URL = "/static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-LAPTOP_SERVICE_URL = env("LAPTOP_SERVICE_URL", default="http://localhost:8003")
-MOBILE_SERVICE_URL = env("MOBILE_SERVICE_URL", default="http://localhost:8004")
+LAPTOP_SERVICE_URL = env("LAPTOP_SERVICE_URL", default="http://localhost:8103")
+MOBILE_SERVICE_URL = env("MOBILE_SERVICE_URL", default="http://localhost:8104")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -90,3 +92,8 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8100",
+    "http://localhost",
+]

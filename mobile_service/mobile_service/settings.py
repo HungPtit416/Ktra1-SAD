@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env()
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("SECRET_KEY", default="mobile-secret")
+SECRET_KEY = env("SECRET_KEY", default="ecommerce-shared-secret-key-2026")
 DEBUG = env.bool("DEBUG", default=True)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["*"])
 
@@ -17,12 +17,14 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "corsheaders",
     "mobiles",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -78,3 +80,8 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.AllowAny",
     ]
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8100",
+    "http://localhost",
+]
