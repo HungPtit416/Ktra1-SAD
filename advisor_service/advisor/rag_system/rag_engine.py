@@ -95,28 +95,52 @@ class RAGEngine:
             query_lower = query.lower()
             is_phone_query = any(term in query_lower for term in ['điện thoại', 'mobile', 'phone', 'smartphone', 'iphone', 'samsung', 'xiaomi', 'vivo', 'oppo'])
             is_laptop_query = any(term in query_lower for term in ['laptop', 'máy tính', 'computer', 'notebook'])
+            is_game_phone_query = is_phone_query and any(term in query_lower for term in ['game', 'chơi', 'gaming', 'mượt'])
             
             retrieved_docs = []
             for idx in top_indices:
-                if similarities[idx] > 0.15:  # Lowered threshold to 0.15
-                    doc_data = self.kb_data.get(list(self.kb_data.keys())[idx], {})
-                    doc_title = doc_data.get('source_title', '').lower()
-                    doc_content = self.documents[idx].lower()
+                # Dynamic threshold: phones = 0.10, laptops = 0.10, games = 0.08
+                min_threshold = 0.08 if is_game_phone_query else 0.10
+                if similarities[idx] < min_threshold:
+                    continue
                     
-                    # Filter out irrelevant documents
-                    if is_phone_query and ('laptop' in doc_title or 'máy tính' in doc_title or ('brand' in doc_title and 'laptop' in doc_content)):
-                        continue
-                    if is_laptop_query and ('phone' in doc_title or 'điện thoại' in doc_title or 'smartphone' in doc_title):
-                        continue
-                    
-                    retrieved_docs.append({
-                        'content': self.documents[idx],
-                        'source_id': doc_data.get('source_id'),
-                        'source_title': doc_data.get('source_title'),
-                        'similarity_score': float(similarities[idx]),
-                        'metadata': doc_data.get('metadata', {}),
-                        'query_type': query_type
-                    })
+                doc_data = self.kb_data.get(list(self.kb_data.keys())[idx], {})
+                doc_title = doc_data.get('source_title', '').lower()
+                doc_content = self.documents[idx].lower()
+                doc_category = str(doc_data.get('metadata', {}).get('category', '')).lower()
+                
+                # STRICT category matching to avoid cross-category contamination
+                phone_keywords = {'điện thoại', 'mobile', 'phone', 'smartphone', 'iphone', 'samsung', 'xiaomi', 'vivo', 'oppo', 'realme', 'motorola', 'google'}
+                laptop_keywords = {'laptop', 'máy tính', 'notebook', 'dell', 'asus', 'hp', 'lenovo', 'macbook', 'computer', 'msi', 'razer'}
+                
+                # Get dominant category from doc
+                has_phone_term = any(term in doc_title + doc_category for term in phone_keywords)
+                has_laptop_term = any(term in doc_title + doc_category for term in laptop_keywords)
+                
+                # STRICT filter: reject if category completely mismatches
+                if is_phone_query and has_laptop_term and not has_phone_term:
+                    continue  # User wants phone, but doc is clearly laptop
+                if is_laptop_query and has_phone_term and not has_laptop_term:
+                    continue  # User wants laptop, but doc is clearly phone
+                
+                # Boost confidence if category matches
+                final_similarity = similarities[idx]
+                if is_phone_query and has_phone_term:
+                    final_similarity = min(similarities[idx] * 1.15, 1.0)  # Boost matching phones
+                if is_laptop_query and has_laptop_term:
+                    final_similarity = min(similarities[idx] * 1.15, 1.0)  # Boost matching laptops
+                if is_game_phone_query and has_phone_term and any(g in query_lower for g in ['game', 'gaming']):
+                    final_similarity = min(similarities[idx] * 1.2, 1.0)  # Extra boost for gaming phones
+                
+                # Append to results (moved OUTSIDE all conditionals)
+                retrieved_docs.append({
+                    'content': self.documents[idx],
+                    'source_id': doc_data.get('source_id'),
+                    'source_title': doc_data.get('source_title'),
+                    'similarity_score': float(final_similarity),
+                    'metadata': doc_data.get('metadata', {}),
+                    'query_type': query_type
+                })
             
             logger.info(f"Retrieved {len(retrieved_docs)} documents for query: '{query}' (type: {query_type})")
             return retrieved_docs
@@ -279,25 +303,52 @@ class RAGEngine:
         query_type = docs[0].get('query_type', 'general') if docs else 'general'
         query_lower = query.lower()
         
+        # Filter out generic/brand-analysis responses if they exist
+        content_lower = context.lower()
+        is_generic = any(phrase in content_lower for phrase in [
+            'phân tích brand', 'top trend', 'ecosystem', 'hệ sinh thái'
+        ])
+        
+        if is_generic and len(docs) > 1:
+            # Try to find a more specific document
+            for doc in docs[1:]:
+                specific_content = doc['content'].lower()
+                if not any(p in specific_content for p in ['phân tích brand', 'top trend', 'ecosystem']):
+                    context = doc['content']
+                    break
+        
+        # *** NEW: Phone Gaming - Dành riêng ***
+        is_phone_game_query = ('điện thoại' in query_lower or 'phone' in query_lower) and any(g in query_lower for g in ['game', 'chơi', 'gaming', 'mượt'])
+        if is_phone_game_query:
+            return f"{context}\n\n🎮 Dành cho Gaming Mobile: Snapdragon 7-8 Gen+, 120Hz+, RAM 8GB+, pin bền, tản nhiệt tốt."
+        
         # Gaming recommendations
         if query_type == 'gaming' or 'gaming' in query_lower or 'game' in query_lower:
-            return f"{context}\n\nDành cho Gaming: Ưu tiên RTX (4060+), CPU mạnh, refresh rate 144Hz+, tản nhiệt tốt."
+            return f"{context}\n\n💎 Dành cho Gaming: Ưu tiên RTX (4060+), CPU mạnh, refresh rate 144Hz+, tản nhiệt tốt."
         
         # Programming recommendations
         elif query_type == 'programming' or 'lập trình' in query_lower or 'code' in query_lower:
-            return f"{context}\n\nDành cho Lập trình: CPU nhanh (i7/Ryzen 7), RAM 16GB, SSD 512GB+, bàn phím tốt."
+            return f"{context}\n\n💻 Dành cho Lập trình: CPU nhanh (i7/Ryzen 7), RAM 16GB, SSD 512GB+, bàn phím tốt."
         
         # Design/Video editing
         elif query_type == 'design' or 'design' in query_lower or 'video' in query_lower:
-            return f"{context}\n\nDành cho Design/Video: Màn hình color-accurate, RAM 16GB+, GPU cao, SSD nhanh."
+            return f"{context}\n\n🎨 Dành cho Design/Video: Màn hình color-accurate, RAM 16GB+, GPU cao, SSD nhanh."
         
         # Student budget-conscious
         elif query_type == 'student' or 'sinh viên' in query_lower or 'học sinh' in query_lower:
-            return f"{context}\n\nDành cho Sinh viên: Đủ xử lý lập trình, browsing, văn bản. Budget 14-18 triệu."
+            return f"{context}\n\n📚 Dành cho Sinh viên: Đủ xử lý lập trình, browsing, văn bản. Budget 14-18 triệu."
         
         # Portable/nomad
         elif query_type == 'portable' or 'portable' in query_lower or 'di động' in query_lower:
-            return f"{context}\n\nDành cho Nomad: Nhẹ <1.4kg, pin 12h+, sạc nhanh, cổng USB-C đa năng."
+            return f"{context}\n\n✈️ Dành cho Nomad: Nhẹ <1.4kg, pin 12h+, sạc nhanh, cổng USB-C đa năng."
+        
+        # Phone-specific queries
+        elif 'điện thoại' in query_lower or 'phone' in query_lower or 'camera' in query_lower:
+            return f"{context}\n\n📱 Điểm mạnh: Camera chất lượng cao, pin bền, hiệu suất ổn định."
+        
+        # Price/Budget queries
+        elif any(word in query_lower for word in ['dưới', 'rẻ', 'giá', 'triệu', 'budget']):
+            return f"{context}\n\n💰 Lựa chọn tối ưu: Cân bằng giá - hiệu năng - chất lượng."
         
         # Default - just return context
         else:
